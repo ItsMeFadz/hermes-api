@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'sync' => [
+        'api_key' => env('SYNC_API_KEY'),
+        'api_url' => env('SYNC_API_URL'),
+        'kodeljk' => env('SYNC_KODELJK'),
+        'sort' => env('SYNC_SORT', 'a.tglkondisi'),
+    ],
+
 ];

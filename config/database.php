@@ -112,6 +112,19 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'sqlsrv_local' => [
+            'driver' => 'sqlsrv',
+            'url' => env('LOCAL_SQLSRV_URL'),
+            'host' => env('LOCAL_SQLSRV_HOST', 'localhost'),
+            'port' => env('LOCAL_SQLSRV_PORT', '1433'),
+            'database' => env('LOCAL_SQLSRV_DATABASE', 'laravel'),
+            'username' => env('LOCAL_SQLSRV_USERNAME', 'root'),
+            'password' => env('LOCAL_SQLSRV_PASSWORD', ''),
+            'charset' => env('LOCAL_SQLSRV_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+        ],
+
     ],
 
     /*
