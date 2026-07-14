@@ -19,7 +19,10 @@ Artisan::command('sync:global', function (LunasKreditSyncService $syncService) {
 
     try
     {
-        $result = $syncService->send($bln, $thn, $kodeljk, '', $sort);
+        $total = $syncService->countRows($bln, $thn, $kodeljk);
+        $this->info("Data ditemukan: {$total}");
+
+        $result = $syncService->send($bln, $thn, $kodeljk, $sort);
     }
     catch (Throwable $exception)
     {

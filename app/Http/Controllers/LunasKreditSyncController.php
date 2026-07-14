@@ -29,7 +29,6 @@ class LunasKreditSyncController extends Controller
                 (int) $validated['bln'],
                 (int) $validated['thn'],
                 $validated['kodeljk'],
-                $validated['sandicabang'] ?? '',
                 $validated['sort'] ?? null,
                 $validated['target_url'] ?? null,
             );

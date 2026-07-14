@@ -13,9 +13,9 @@ class LunasKreditSyncService
      *
      * @throws RequestException
      */
-    public function send(int $bln, int $thn, string $kodeljk, string $sandicabang = '', ?string $sort = null, ?string $targetUrl = null): array
+    public function send(int $bln, int $thn, string $kodeljk, ?string $sort = null, ?string $targetUrl = null): array
     {
-        $rows = $this->fetchRows($bln, $thn, $kodeljk, $sandicabang, $sort);
+        $rows = $this->fetchRows($bln, $thn, $kodeljk, $sort);
         $endpoint = $targetUrl ?? $this->syncEndpoint('sync/lunas-kredit/receive');
 
         if (count($rows) === 0)
@@ -51,7 +51,7 @@ class LunasKreditSyncService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function fetchRows(int $bln, int $thn, string $kodeljk, string $sandicabang = '', ?string $sort = null): array
+    public function fetchRows(int $bln, int $thn, string $kodeljk, ?string $sort = null): array
     {
         $sortColumns = [
             'tglkondisi' => 'a.tglkondisi',
@@ -130,7 +130,6 @@ OUTER APPLY (
 ) trx424
 WHERE
     (? = '' OR a.kodeljk = ?)
-    AND a.sandicabang LIKE ?
     AND a.kodekondisi = '02'
     AND a.bakidebet = 0
     AND DATEPART(m, a.tglkondisi) = ?
@@ -140,8 +139,26 @@ SQL;
 
         return array_map(
             fn(object $row) => (array) $row,
-            DB::select($sql, [$kodeljk, $kodeljk, "%{$sandicabang}%", $bln, $thn]),
+            DB::select($sql, [$kodeljk, $kodeljk, $bln, $thn]),
         );
+    }
+
+    public function countRows(int $bln, int $thn, string $kodeljk): int
+    {
+        $sql = <<<SQL
+SELECT COUNT(*) AS total
+FROM crdmaster a
+WHERE
+    (? = '' OR a.kodeljk = ?)
+    AND a.kodekondisi = '02'
+    AND a.bakidebet = 0
+    AND DATEPART(m, a.tglkondisi) = ?
+    AND DATEPART(yyyy, a.tglkondisi) = ?
+SQL;
+
+        $result = DB::selectOne($sql, [$kodeljk, $kodeljk, $bln, $thn]);
+
+        return (int) ($result->total ?? 0);
     }
 
     public function syncKey(): string
