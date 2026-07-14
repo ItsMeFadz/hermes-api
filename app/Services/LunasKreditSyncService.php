@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 class LunasKreditSyncService
 {
     /**
-     * @return array{sent: int, remote: mixed}
+     * @return array{sent: int, remote: mixed, skipped: bool}
      *
      * @throws RequestException
      */
@@ -17,6 +17,15 @@ class LunasKreditSyncService
     {
         $rows = $this->fetchRows($bln, $thn, $kodeljk, $sandicabang, $sort);
         $endpoint = $targetUrl ?? $this->syncEndpoint('sync/lunas-kredit/receive');
+
+        if (count($rows) === 0)
+        {
+            return [
+                'sent' => 0,
+                'remote' => null,
+                'skipped' => true,
+            ];
+        }
 
         if (!$endpoint)
         {
@@ -35,6 +44,7 @@ class LunasKreditSyncService
         return [
             'sent' => count($rows),
             'remote' => $response->json(),
+            'skipped' => false,
         ];
     }
 
@@ -119,7 +129,7 @@ OUTER APPLY (
     WHERE (dracc = a.norekcrd OR cracc = a.norekcrd) AND CAST(tgltrx AS date) = CAST(a.tglkondisi AS date) AND cd_trx1 = 424 AND ststrx = 1
 ) trx424
 WHERE
-    a.kodeljk = ?
+    (? = '' OR a.kodeljk = ?)
     AND a.sandicabang LIKE ?
     AND a.kodekondisi = '02'
     AND a.bakidebet = 0
@@ -130,7 +140,7 @@ SQL;
 
         return array_map(
             fn(object $row) => (array) $row,
-            DB::select($sql, [$kodeljk, "%{$sandicabang}%", $bln, $thn]),
+            DB::select($sql, [$kodeljk, $kodeljk, "%{$sandicabang}%", $bln, $thn]),
         );
     }
 
