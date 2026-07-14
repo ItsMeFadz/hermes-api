@@ -15,7 +15,7 @@ class LunasKreditSyncService
      */
     public function send(int $bln, int $thn, string $kodeljk, ?string $sort = null, ?string $targetUrl = null): array
     {
-        $rows = $this->fetchRows($bln, $thn, $kodeljk, $sort);
+        $rows = $this->fetchRows($bln, $thn, trim($kodeljk), $sort);
         $endpoint = $targetUrl ?? $this->syncEndpoint('sync/lunas-kredit/receive');
 
         if (count($rows) === 0)
@@ -53,6 +53,8 @@ class LunasKreditSyncService
      */
     public function fetchRows(int $bln, int $thn, string $kodeljk, ?string $sort = null): array
     {
+        $kodeljk = trim($kodeljk);
+
         $sortColumns = [
             'tglkondisi' => 'a.tglkondisi',
             'a.tglkondisi' => 'a.tglkondisi',
@@ -131,7 +133,6 @@ OUTER APPLY (
 WHERE
     (? = '' OR a.kodeljk = ?)
     AND a.kodekondisi = '02'
-    AND a.bakidebet = 0
     AND DATEPART(m, a.tglkondisi) = ?
     AND DATEPART(yyyy, a.tglkondisi) = ?
 ORDER BY {$sortSql}
@@ -145,13 +146,14 @@ SQL;
 
     public function countRows(int $bln, int $thn, string $kodeljk): int
     {
+        $kodeljk = trim($kodeljk);
+
         $sql = <<<SQL
 SELECT COUNT(*) AS total
 FROM crdmaster a
 WHERE
     (? = '' OR a.kodeljk = ?)
     AND a.kodekondisi = '02'
-    AND a.bakidebet = 0
     AND DATEPART(m, a.tglkondisi) = ?
     AND DATEPART(yyyy, a.tglkondisi) = ?
 SQL;
