@@ -10,10 +10,19 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Artisan::command('sync:global', function (LunasKreditSyncService $syncService) {
-    $bln = now()->month;
-    $thn = now()->year;
     $kodeljk = trim((string) config('services.sync.kodeljk'));
     $sort = (string) config('services.sync.sort', 'a.tglkondisi');
+    $period = $syncService->latestPeriod($kodeljk);
+
+    if (!$period)
+    {
+        $this->info('Tidak ada data lunas kredit kodekondisi 02 di crdmaster.');
+
+        return 0;
+    }
+
+    $bln = $period['bln'];
+    $thn = $period['thn'];
 
     $this->info("Sinkronisasi lunas kredit {$bln}/{$thn} dimulai...");
     $this->info('Filter kodeljk: ' . ($kodeljk !== '' ? $kodeljk : 'semua'));

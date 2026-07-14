@@ -163,6 +163,38 @@ SQL;
         return (int) ($result->total ?? 0);
     }
 
+    /**
+     * @return array{bln: int, thn: int}|null
+     */
+    public function latestPeriod(string $kodeljk): ?array
+    {
+        $kodeljk = trim($kodeljk);
+
+        $sql = <<<SQL
+SELECT TOP 1
+    DATEPART(m, a.tglkondisi) AS bln,
+    DATEPART(yyyy, a.tglkondisi) AS thn
+FROM crdmaster a
+WHERE
+    (? = '' OR a.kodeljk = ?)
+    AND a.kodekondisi = '02'
+    AND a.tglkondisi IS NOT NULL
+ORDER BY a.tglkondisi DESC
+SQL;
+
+        $result = DB::selectOne($sql, [$kodeljk, $kodeljk]);
+
+        if (!$result)
+        {
+            return null;
+        }
+
+        return [
+            'bln' => (int) $result->bln,
+            'thn' => (int) $result->thn,
+        ];
+    }
+
     public function syncKey(): string
     {
         return (string) config('services.sync.api_key');
