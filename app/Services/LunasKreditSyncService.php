@@ -16,7 +16,7 @@ class LunasKreditSyncService
     public function send(int $bln, int $thn, string $kodeljk, string $sandicabang = '', ?string $sort = null, ?string $targetUrl = null): array
     {
         $rows = $this->fetchRows($bln, $thn, $kodeljk, $sandicabang, $sort);
-        $endpoint = $targetUrl ?? $this->syncEndpoint('lunas-kredit/receive');
+        $endpoint = $targetUrl ?? $this->syncEndpoint('sync/lunas-kredit/receive');
 
         if (!$endpoint)
         {
