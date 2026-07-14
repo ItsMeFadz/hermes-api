@@ -23,13 +23,14 @@ class LunasKreditSyncService
             abort(422, 'Target URL belum diset. Isi SYNC_API_URL di .env.');
         }
 
-        $response = Http::timeout(60)
+        $http = Http::timeout(60)
             ->retry(2, 1000)
             ->withHeaders(['X-Sync-Key' => $this->syncKey()])
-            ->post($endpoint, [
-                'items' => $rows,
-            ])
-            ->throw();
+            ->withOptions(['verify' => $this->sslVerifyOption()]);
+
+        $response = $http->post($endpoint, [
+            'items' => $rows,
+        ])->throw();
 
         return [
             'sent' => count($rows),
@@ -129,7 +130,7 @@ SQL;
 
         return array_map(
             fn(object $row) => (array) $row,
-            DB::connection('sqlsrv_local')->select($sql, [$kodeljk, "%{$sandicabang}%", $bln, $thn]),
+            DB::select($sql, [$kodeljk, "%{$sandicabang}%", $bln, $thn]),
         );
     }
 
@@ -148,5 +149,22 @@ SQL;
         }
 
         return rtrim((string) $baseUrl, '/') . '/' . ltrim($path, '/');
+    }
+
+    private function sslVerifyOption(): bool|string
+    {
+        if (!config('services.sync.verify_ssl', true))
+        {
+            return false;
+        }
+
+        $caBundle = config('services.sync.ca_bundle');
+
+        if ($caBundle)
+        {
+            return (string) $caBundle;
+        }
+
+        return true;
     }
 }

@@ -40,6 +40,8 @@ return [
         'api_url' => env('SYNC_API_URL'),
         'kodeljk' => env('SYNC_KODELJK'),
         'sort' => env('SYNC_SORT', 'a.tglkondisi'),
+        'verify_ssl' => env('SYNC_VERIFY_SSL', true),
+        'ca_bundle' => env('SYNC_CA_BUNDLE'),
     ],
 
 ];
