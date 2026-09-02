@@ -16,6 +16,7 @@ Artisan::command(
     'sync:global',
     function (LunasKreditSyncService $lunasService, TagihanKreditSyncService $tagihanService)
     {
+        $hasError = false;
         $this->info('========================================');
         $this->info('      SINKRONISASI GLOBAL DIMULAI');
         $this->info('========================================');
@@ -93,6 +94,8 @@ Artisan::command(
         }
         catch (\Throwable $exception)
         {
+            $hasError = true;
+
             $this->error(
                 'Sinkronisasi lunas kredit gagal: '
                 . $exception->getMessage()
@@ -164,6 +167,8 @@ Artisan::command(
         }
         catch (\Throwable $exception)
         {
+            $hasError = true;
+
             $this->error(
                 'Sinkronisasi tagihan kredit gagal: '
                 . $exception->getMessage()
@@ -178,6 +183,17 @@ Artisan::command(
         */
 
         $this->newLine();
+
+        $this->newLine();
+
+        if ($hasError)
+        {
+            $this->error('========================================');
+            $this->error('      SINKRONISASI GLOBAL GAGAL');
+            $this->error('========================================');
+
+            return 1;
+        }
 
         $this->info('========================================');
         $this->info('      SINKRONISASI GLOBAL SELESAI');
