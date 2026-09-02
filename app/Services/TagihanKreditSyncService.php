@@ -35,13 +35,14 @@ class TagihanKreditSyncService
                 $tgl2,
                 $kodeljk,
                 $sandicabang,
-                $column,
-                $filter,
-                $sort,
+                '*',
+                '',
+                ' ',
             ]
         );
 
-        return array_map(function ($row) use ($kodeljk) {
+        return array_map(function ($row)
+        {
             return [
                 'norekcrd' => $row->norekcrd ?? null,
 
@@ -83,7 +84,8 @@ class TagihanKreditSyncService
      */
     public function send(array $items): array
     {
-        if (empty($items)) {
+        if (empty($items))
+        {
             return [
                 'success' => true,
                 'sent' => 0,
@@ -91,11 +93,11 @@ class TagihanKreditSyncService
             ];
         }
 
-        $targetUrl = 'https://api.arthiasere.com/athena-api/api/sync/tagihan-kredit/receive';
+        $targetUrl = $this->syncEndpoint('sync/tagihan-kredit/receive');
+        $apiKey = $this->syncKey();
 
-        $apiKey = (string) env('SYNC_API_KEY', '');
-
-        if ($apiKey === '') {
+        if ($apiKey === '')
+        {
             throw new \RuntimeException(
                 'SYNC_API_KEY belum tersedia di .env'
             );
@@ -119,5 +121,22 @@ class TagihanKreditSyncService
             'sent' => count($items),
             'response' => $response->json(),
         ];
+    }
+
+    public function syncKey(): string
+    {
+        return (string) config('services.sync.api_key');
+    }
+
+    public function syncEndpoint(string $path): ?string
+    {
+        $baseUrl = config('services.sync.api_url');
+
+        if (!$baseUrl)
+        {
+            return null;
+        }
+
+        return rtrim((string) $baseUrl, '/') . '/' . ltrim($path, '/');
     }
 }
