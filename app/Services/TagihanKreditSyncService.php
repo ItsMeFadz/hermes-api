@@ -99,8 +99,7 @@ LEFT JOIN reff_umum h
 
 WHERE
     a.kodeljk = ?
-    AND a.kodekondisi = '00'
-    AND a.stsrekcrd NOT IN (0, 2, 3, 4)
+    AND a.stsrekcrd = '1'
     AND a.stsbar = 1
     AND a.oto = 1
 
