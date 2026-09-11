@@ -34,7 +34,8 @@ SELECT
     a.bakidebet,
 
     DAY(b.tglangsuran) AS tgltempo,
-    DAY(a.tglefektif) AS tglefektif,
+    a.tglefektif AS tglefektif,
+    a.tgljthtempo AS tgljthtempo,
     a.graceperiod,
 
     h.datatext1 AS statusrek,
@@ -162,6 +163,7 @@ SQL;
 
                 'tgltempo' => $row->tgltempo ?? null,
                 'tglefektif' => $row->tglefektif ?? null,
+                'tgljthtempo' => $row->tgljthtempo ?? null,
                 'graceperiod' => $row->graceperiod ?? null,
 
                 'statusrek' => $row->statusrek ?? null,
