@@ -48,6 +48,9 @@ SELECT
     a.haritunggakkan,
 
     a.norekpembayaran,
+    a.tungpokok,
+    a.tungbunga,
+    a.kolektibilitas,
 
     ISNULL(
         CASE
@@ -173,7 +176,10 @@ SQL;
                 'tagdenda' => $row->tagdenda ?? null,
                 'totalangsuran' => $row->totalangsuran ?? null,
                 'haritunggakkan' => $row->haritunggakkan ?? null,
-
+                'tungpokok' => $row->tungpokok ?? null,
+                'tungbunga' => $row->tungbunga ?? null,
+                
+                'kolektibilitas' => $row->kolektibilitas ?? null,
                 'norekpembayaran' => $row->norekpembayaran ?? null,
 
                 'saldotab' => $row->saldotab ?? null,
