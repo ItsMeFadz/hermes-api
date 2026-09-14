@@ -104,16 +104,8 @@ LEFT JOIN reff_umum h
 WHERE
     a.kodeljk = ?
     AND a.stsrekcrd = '1'
-    AND a.stsbar = 1
-    AND a.oto = 1
-
     AND b.tglangsuran BETWEEN ? AND ?
-
-    AND (
-        b.tagpokok - b.byrpokok > 0
-        OR b.tagbunga - b.byrbunga > 0
-        OR b.tagdenda - b.byrdenda > 0
-    )
+    
 SQL;
 
         $params = [
