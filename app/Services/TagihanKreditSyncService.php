@@ -51,6 +51,7 @@ SELECT
     a.tungpokok,
     a.tungbunga,
     a.kolektibilitas,
+    a.kodekondisi,
 
     ISNULL(
         CASE
@@ -105,7 +106,7 @@ WHERE
     a.kodeljk = ?
     AND a.stsrekcrd = '1'
     AND b.tglangsuran BETWEEN ? AND ?
-    
+
 SQL;
 
         $params = [
@@ -170,7 +171,7 @@ SQL;
                 'haritunggakkan' => $row->haritunggakkan ?? null,
                 'tungpokok' => $row->tungpokok ?? null,
                 'tungbunga' => $row->tungbunga ?? null,
-                
+                'kodekondisi' => $row->kodekondisi ?? null,
                 'kolektibilitas' => $row->kolektibilitas ?? null,
                 'norekpembayaran' => $row->norekpembayaran ?? null,
 
