@@ -105,7 +105,7 @@ LEFT JOIN reff_umum h
 
 WHERE
     a.kodeljk = ?
-    AND a.stsrekcrd = '1'
+    AND a.stsrekcrd IN ('1', '7')
     AND b.tglangsuran BETWEEN ? AND ?
 SQL;
 
@@ -416,7 +416,7 @@ SQL;
         FROM crdmaster a
         WHERE
             a.kodeljk = ?
-            AND a.stsrekcrd = '1'
+            AND a.stsrekcrd IN ('1', '7')
         SQL;
 
         $params = [
@@ -884,7 +884,7 @@ SQL;
 
         WHERE
             a.kodeljk = ?
-            AND a.stsrekcrd = '1'
+            AND a.stsrekcrd IN ('1', '7')
         SQL;
 
                 $params = [
