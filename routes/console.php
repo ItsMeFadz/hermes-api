@@ -108,7 +108,6 @@ Artisan::command(
         | 2. SYNC TAGIHAN KREDIT
         |--------------------------------------------------------------------------
         */
-
         $this->newLine();
         $this->info('=== 2. TAGIHAN KREDIT ===');
 
@@ -131,37 +130,55 @@ Artisan::command(
             $sandicabang = '000';
 
             $this->info(
-                "Mengambil tagihan kredit {$bln}/{$thn}..."
+                "Sinkronisasi tagihan kredit {$bln}/{$thn}..."
             );
 
-            $items = $tagihanService
-                ->getTagihanKreditFromSqlServer(
-                    $tgl1,
-                    $tgl2,
-                    $kodeljk,
-                    $sandicabang
-                );
-
-            $total = count($items);
+            /*
+             * Jalankan sync lengkap:
+             *
+             * 1. Ambil rekening aktif
+             * 2. Baca snapshot sebelumnya
+             * 3. Deteksi rekening yang hilang
+             * 4. Ambil ulang data rekening yang sudah tidak aktif
+             * 5. Kirim data aktif + tidak aktif ke Athena
+             * 6. Jika berhasil, update snapshot
+             */
+            $result = $tagihanService->syncWithSnapshot(
+                $tgl1,
+                $tgl2,
+                $kodeljk,
+                $sandicabang
+            );
 
             $this->info(
-                "Data tagihan ditemukan: {$total}"
+                'Rekening aktif saat ini: '
+                . ($result['active_accounts'] ?? 0)
             );
 
-            if ($total === 0)
-            {
-                $this->info(
-                    'Tidak ada data tagihan kredit untuk dikirim.'
-                );
-            }
-            else
-            {
-                $result = $tagihanService->send($items);
+            $this->info(
+                'Rekening tidak aktif terdeteksi: '
+                . ($result['disappeared_accounts'] ?? 0)
+            );
 
+            $this->info(
+                'Data tagihan aktif dikirim: '
+                . ($result['active_items_sent'] ?? 0)
+            );
+
+            $this->info(
+                'Data rekening tidak aktif dikirim: '
+                . ($result['inactive_items_sent'] ?? 0)
+            );
+
+            $this->info(
+                'Total data dikirim: '
+                . ($result['total_sent'] ?? 0)
+            );
+
+            if ($result['snapshot_updated'] ?? false)
+            {
                 $this->info(
-                    'Tagihan kredit berhasil dikirim: '
-                    . ($result['sent'] ?? 0)
-                    . ' data.'
+                    'Snapshot rekening kredit berhasil diperbarui.'
                 );
             }
         }
