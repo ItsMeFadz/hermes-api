@@ -40,6 +40,7 @@ SELECT
 
     h.datatext1 AS statusrek,
 
+    a.plafon,
     b.tagpokok,
     b.tagbunga,
     b.tagdenda,
@@ -163,6 +164,7 @@ SQL;
 
                 'statusrek' => $row->statusrek ?? null,
 
+                'plafon' => $row->plafon ?? null,
                 'tagpokok' => $row->tagpokok ?? null,
                 'tagbunga' => $row->tagbunga ?? null,
                 'tagdenda' => $row->tagdenda ?? null,
@@ -495,80 +497,80 @@ SQL;
         );
 
         $sql = <<<SQL
-SELECT
-    a.norekcrd,
+        SELECT
+            a.norekcrd,
 
-    RTRIM(d.namalengkap) AS namalengkap,
-    d.alamat AS alamatktp,
-    d.alamatdomisili,
-    d.notelp,
-    d.nohp,
+            RTRIM(d.namalengkap) AS namalengkap,
+            d.alamat AS alamatktp,
+            d.alamatdomisili,
+            d.notelp,
+            d.nohp,
 
-    a.noakad,
-    a.bakidebet,
+            a.noakad,
+            a.bakidebet,
 
-    a.tglefektif,
-    a.tgljthtempo,
-    a.graceperiod,
+            a.tglefektif,
+            a.tgljthtempo,
+            a.graceperiod,
 
-    h.datatext1 AS statusrek,
+            h.datatext1 AS statusrek,
 
-    a.haritunggakkan,
+            a.haritunggakkan,
 
-    a.norekpembayaran,
-    a.tungpokok,
-    a.tungbunga,
-    a.kolektibilitas,
-    a.kodekondisi,
+            a.norekpembayaran,
+            a.tungpokok,
+            a.tungbunga,
+            a.kolektibilitas,
+            a.kodekondisi,
 
-    ISNULL(
-        CASE
-            WHEN c.saldoakhir - c.saldoblokir - e.minsaldo < 0
-                THEN 0
-            ELSE c.saldoakhir - c.saldoblokir - e.minsaldo
-        END,
-        0
-    ) AS saldotab,
+            ISNULL(
+                CASE
+                    WHEN c.saldoakhir - c.saldoblokir - e.minsaldo < 0
+                        THEN 0
+                    ELSE c.saldoakhir - c.saldoblokir - e.minsaldo
+                END,
+                0
+            ) AS saldotab,
 
-    ISNULL(c.saldoakhir, 0) AS saldotabactual,
+            ISNULL(c.saldoakhir, 0) AS saldotabactual,
 
-    a.kodeao AS kodeao,
-    f.ket AS ao,
+            a.kodeao AS kodeao,
+            f.ket AS ao,
 
-    g.ket AS ketinstansi
+            g.ket AS ketinstansi
 
-FROM crdmaster a
+        FROM crdmaster a
 
-JOIN cif d
-    ON a.cif = d.cif
+        JOIN cif d
+            ON a.cif = d.cif
 
-LEFT JOIN tabmaster c
-    ON a.kodeljk = c.kodeljk
-    AND a.sandicabang = c.sandicabang
-    AND a.norekpembayaran = c.norekening
+        LEFT JOIN tabmaster c
+            ON a.kodeljk = c.kodeljk
+            AND a.sandicabang = c.sandicabang
+            AND a.norekpembayaran = c.norekening
 
-LEFT JOIN tabungan_setup e
-    ON c.kodeproduktab = e.kodeproduk
+        LEFT JOIN tabungan_setup e
+            ON c.kodeproduktab = e.kodeproduk
 
-LEFT JOIN refintern_ao f
-    ON a.kodeljk = f.kodeljk
-    AND a.sandicabang = f.sandicabang
-    AND a.kodeao = f.kode
+        LEFT JOIN refintern_ao f
+            ON a.kodeljk = f.kodeljk
+            AND a.sandicabang = f.sandicabang
+            AND a.kodeao = f.kode
 
-LEFT JOIN refintern_instansi g
-    ON a.kodeljk = g.kodeljk
-    AND a.sandicabang = g.sandicabang
-    AND a.kodeinstansi = g.kode
+        LEFT JOIN refintern_instansi g
+            ON a.kodeljk = g.kodeljk
+            AND a.sandicabang = g.sandicabang
+            AND a.kodeinstansi = g.kode
 
-LEFT JOIN reff_umum h
-    ON a.kodeljk = h.kodeljk
-    AND a.stsrekcrd = h.datavalue1
-    AND h.kode1 = 'stsrekcrd'
+        LEFT JOIN reff_umum h
+            ON a.kodeljk = h.kodeljk
+            AND a.stsrekcrd = h.datavalue1
+            AND h.kode1 = 'stsrekcrd'
 
-WHERE
-    a.kodeljk = ?
-    AND a.norekcrd IN ({$placeholders})
-SQL;
+        WHERE
+            a.kodeljk = ?
+            AND a.norekcrd IN ({$placeholders})
+        SQL;
 
         $params = [
             $kodeljk,
@@ -579,8 +581,8 @@ SQL;
         {
             $sql .= <<<SQL
 
-    AND a.sandicabang = ?
-SQL;
+            AND a.sandicabang = ?
+        SQL;
 
             $params[] = $sandicabang;
         }
@@ -611,6 +613,7 @@ SQL;
 
                 'statusrek' => $row->statusrek ?? null,
 
+                'plafon' => null,
                 'tagpokok' => null,
                 'tagbunga' => null,
                 'tagdenda' => null,
