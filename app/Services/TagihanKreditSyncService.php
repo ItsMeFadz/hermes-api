@@ -308,6 +308,11 @@ SQL;
         );
     }
 
+    private function snapshotExists(): bool
+    {
+        return is_file($this->snapshotPath());
+    }
+
     /**
      * Baca snapshot rekening aktif sebelumnya.
      */
@@ -508,6 +513,7 @@ SQL;
 
             a.noakad,
             a.bakidebet,
+            a.plafon,
 
             a.tglefektif,
             a.tgljthtempo,
@@ -613,7 +619,7 @@ SQL;
 
                 'statusrek' => $row->statusrek ?? null,
 
-                'plafon' => null,
+                'plafon' => $row->plafon,
                 'tagpokok' => null,
                 'tagbunga' => null,
                 'tagdenda' => null,
@@ -690,15 +696,39 @@ SQL;
 
         /*
          * =====================================================
-         * 4. Ambil data tagihan normal
+         * 4. Ambil data aktif
          * =====================================================
+         *
+         * Kalau snapshot belum ada:
+         *     INITIAL SYNC
+         *     -> kirim semua rekening aktif
+         *
+         * Kalau snapshot sudah ada:
+         *     NORMAL SYNC
+         *     -> hanya tagihan berdasarkan tglangsuran
          */
-        $activeItems = $this->getTagihanKreditFromSqlServer(
-            $tgl1,
-            $tgl2,
-            $kodeljk,
-            $sandicabang
-        );
+        if (!$this->snapshotExists())
+        {
+            echo 'Snapshot belum ada. Menjalankan initial sync...'
+                . PHP_EOL;
+
+            $activeItems = $this->getInitialActiveCreditAccounts(
+                $kodeljk,
+                $sandicabang
+            );
+        }
+        else
+        {
+            echo 'Snapshot ditemukan. Menjalankan sync normal...'
+                . PHP_EOL;
+
+            $activeItems = $this->getTagihanKreditFromSqlServer(
+                $tgl1,
+                $tgl2,
+                $kodeljk,
+                $sandicabang
+            );
+        }
 
         /*
          * =====================================================
@@ -771,5 +801,156 @@ SQL;
 
             'snapshot_updated' => true,
         ];
+    }
+
+    public function getInitialActiveCreditAccounts(
+        string $kodeljk,
+        string $sandicabang = '000'
+    ): array {
+        $kodeljk = trim($kodeljk);
+        $sandicabang = trim($sandicabang);
+
+        $sql = <<<SQL
+        SELECT
+            a.norekcrd,
+
+            RTRIM(d.namalengkap) AS namalengkap,
+            d.alamat AS alamatktp,
+            d.alamatdomisili,
+            d.notelp,
+            d.nohp,
+
+            a.noakad,
+            a.bakidebet,
+            a.plafon,
+
+            a.tglefektif,
+            a.tgljthtempo,
+            a.graceperiod,
+
+            h.datatext1 AS statusrek,
+
+            a.haritunggakkan,
+
+            a.norekpembayaran,
+            a.tungpokok,
+            a.tungbunga,
+            a.kolektibilitas,
+            a.kodekondisi,
+
+            ISNULL(
+                CASE
+                    WHEN c.saldoakhir - c.saldoblokir - e.minsaldo < 0
+                        THEN 0
+                    ELSE c.saldoakhir - c.saldoblokir - e.minsaldo
+                END,
+                0
+            ) AS saldotab,
+
+            ISNULL(c.saldoakhir, 0) AS saldotabactual,
+
+            a.kodeao AS kodeao,
+            f.ket AS ao,
+
+            g.ket AS ketinstansi
+
+        FROM crdmaster a
+
+        JOIN cif d
+            ON a.cif = d.cif
+
+        LEFT JOIN tabmaster c
+            ON a.kodeljk = c.kodeljk
+            AND a.sandicabang = c.sandicabang
+            AND a.norekpembayaran = c.norekening
+
+        LEFT JOIN tabungan_setup e
+            ON c.kodeproduktab = e.kodeproduk
+
+        LEFT JOIN refintern_ao f
+            ON a.kodeljk = f.kodeljk
+            AND a.sandicabang = f.sandicabang
+            AND a.kodeao = f.kode
+
+        LEFT JOIN refintern_instansi g
+            ON a.kodeljk = g.kodeljk
+            AND a.sandicabang = g.sandicabang
+            AND a.kodeinstansi = g.kode
+
+        LEFT JOIN reff_umum h
+            ON a.kodeljk = h.kodeljk
+            AND a.stsrekcrd = h.datavalue1
+            AND h.kode1 = 'stsrekcrd'
+
+        WHERE
+            a.kodeljk = ?
+            AND a.stsrekcrd = '1'
+        SQL;
+
+                $params = [
+                    $kodeljk,
+                ];
+
+                if ($sandicabang !== '000')
+                {
+                    $sql .= <<<SQL
+
+            AND a.sandicabang = ?
+        SQL;
+
+            $params[] = $sandicabang;
+        }
+
+        $rows = DB::connection('sqlsrv')->select(
+            $sql,
+            $params
+        );
+
+        return array_map(function ($row)
+        {
+            return [
+                'norekcrd' => $row->norekcrd ?? null,
+
+                'namalengkap' => $row->namalengkap ?? null,
+                'alamatktp' => $row->alamatktp ?? null,
+                'alamatdomisili' => $row->alamatdomisili ?? null,
+                'notelp' => $row->notelp ?? null,
+                'nohp' => $row->nohp ?? null,
+
+                'noakad' => $row->noakad ?? null,
+                'bakidebet' => $row->bakidebet ?? null,
+                'plafon' => $row->plafon,
+
+                'tgltempo' => null,
+                'tglefektif' => $row->tglefektif ?? null,
+                'tgljthtempo' => $row->tgljthtempo ?? null,
+                'graceperiod' => $row->graceperiod ?? null,
+
+                'statusrek' => $row->statusrek ?? null,
+
+                'tagpokok' => null,
+                'tagbunga' => null,
+                'tagdenda' => null,
+                'totalangsuran' => null,
+
+                'haritunggakkan' => $row->haritunggakkan ?? null,
+
+                'tungpokok' => $row->tungpokok ?? null,
+                'tungbunga' => $row->tungbunga ?? null,
+
+                'kolektibilitas' => $row->kolektibilitas ?? null,
+                'kodekondisi' => $row->kodekondisi ?? null,
+
+                'norekpembayaran' => $row->norekpembayaran ?? null,
+
+                'saldotab' => $row->saldotab ?? null,
+                'saldotabactual' => $row->saldotabactual ?? null,
+
+                'kodeao' => $row->kodeao ?? null,
+                'ao' => $row->ao ?? null,
+
+                'ketinstansi' => $row->ketinstansi ?? null,
+            ];
+        }, $rows);
     }
 }
