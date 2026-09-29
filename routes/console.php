@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\LunasKreditSyncService;
+use App\Services\RpsSyncService;
 use App\Services\TagihanKreditSyncService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -14,9 +15,14 @@ Artisan::command('inspire', function ()
 
 Artisan::command(
     'sync:global',
-    function (LunasKreditSyncService $lunasService, TagihanKreditSyncService $tagihanService)
+    function (
+        LunasKreditSyncService $lunasService,
+        TagihanKreditSyncService $tagihanService,
+        RpsSyncService $rpsService
+    )
     {
         $hasError = false;
+        $tagihanSyncSucceeded = false;
         $this->info('========================================');
         $this->info('      SINKRONISASI GLOBAL DIMULAI');
         $this->info('========================================');
@@ -149,6 +155,7 @@ Artisan::command(
                 $kodeljk,
                 $sandicabang
             );
+            $tagihanSyncSucceeded = true;
 
             $this->info(
                 'Rekening aktif saat ini: '
@@ -190,6 +197,59 @@ Artisan::command(
                 'Sinkronisasi tagihan kredit gagal: '
                 . $exception->getMessage()
             );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. SYNC RPS
+        |--------------------------------------------------------------------------
+        */
+        $this->newLine();
+        $this->info('=== 3. JADWAL ANGSURAN (RPS) ===');
+
+        if (!$tagihanSyncSucceeded)
+        {
+            $this->warn(
+                'Sinkronisasi RPS dilewati karena sinkronisasi tagihan kredit gagal.'
+            );
+        }
+        else
+        {
+            try
+            {
+                $accounts = $tagihanService->getSnapshotAccounts();
+                $result = $rpsService->sync($accounts);
+
+                if ($result['skipped'])
+                {
+                    $this->info(
+                        'Tidak ada rekening dalam snapshot atau data RPS untuk dikirim.'
+                    );
+                }
+                else
+                {
+                    $this->info(
+                        'Rekening dari snapshot untuk sinkronisasi RPS: '
+                        . $result['accounts']
+                    );
+                    $this->info(
+                        'Baris RPS berhasil dikirim: '
+                        . $result['sent']
+                        . ' dalam '
+                        . $result['batches']
+                        . ' batch.'
+                    );
+                }
+            }
+            catch (\Throwable $exception)
+            {
+                $hasError = true;
+
+                $this->error(
+                    'Sinkronisasi RPS gagal: '
+                    . $exception->getMessage()
+                );
+            }
         }
 
 

@@ -356,6 +356,11 @@ SQL;
         );
     }
 
+    public function getSnapshotAccounts(): array
+    {
+        return $this->readSnapshot();
+    }
+
     /**
      * Timpa snapshot dengan daftar rekening aktif terbaru.
      */
