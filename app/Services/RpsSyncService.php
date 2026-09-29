@@ -57,6 +57,8 @@ class RpsSyncService
         $batchNumber = 0;
         $lastResponse = null;
         $items = [];
+        $periodStart = now()->startOfMonth()->subMonth();
+        $periodEnd = now()->startOfMonth()->addMonths(2);
 
         foreach (array_chunk($accounts, self::ACCOUNT_QUERY_CHUNK_SIZE) as $accountChunk)
         {
@@ -86,9 +88,17 @@ class RpsSyncService
             tglbyrbunga
         FROM rps
         WHERE norekcrd IN ({$placeholders})
+            AND tglangsuran >= ?
+            AND tglangsuran < ?
         SQL;
 
-            foreach (DB::connection('sqlsrv')->cursor($sql, $accountChunk) as $row)
+            $bindings = [
+                ...$accountChunk,
+                $periodStart->toDateString(),
+                $periodEnd->toDateString(),
+            ];
+
+            foreach (DB::connection('sqlsrv')->cursor($sql, $bindings) as $row)
             {
                 $items[] = (array) $row;
 

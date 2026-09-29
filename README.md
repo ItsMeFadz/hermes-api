@@ -17,3 +17,8 @@
 ---
 
 ## 🔗 Hubungan Antar Proyek
+
+Sinkronisasi RPS mengirim baris angsuran untuk rekening pada snapshot dengan
+rentang `tglangsuran` dari awal bulan sebelumnya sampai awal bulan setelah
+bulan depan (batas akhir tidak termasuk). Dengan demikian, yang dikirim adalah
+jadwal bulan lalu, bulan ini, dan bulan depan.
