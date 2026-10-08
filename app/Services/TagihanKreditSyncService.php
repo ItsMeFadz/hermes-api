@@ -41,6 +41,7 @@ SELECT
     h.datatext1 AS statusrek,
 
     a.plafon,
+    a.jangkawaktu,
     b.tagpokok,
     b.tagbunga,
     b.tagdenda,
@@ -165,6 +166,7 @@ SQL;
                 'statusrek' => $row->statusrek ?? null,
 
                 'plafon' => $row->plafon ?? null,
+                'jangkawaktu' => $row->jangkawaktu ?? null,
                 'tagpokok' => $row->tagpokok ?? null,
                 'tagbunga' => $row->tagbunga ?? null,
                 'tagdenda' => $row->tagdenda ?? null,
@@ -519,6 +521,7 @@ SQL;
             a.noakad,
             a.bakidebet,
             a.plafon,
+            a.jangkawaktu,
 
             a.tglefektif,
             a.tgljthtempo,
@@ -625,6 +628,7 @@ SQL;
                 'statusrek' => $row->statusrek ?? null,
 
                 'plafon' => $row->plafon,
+                'jangkawaktu' => $row->jangkawaktu,
                 'tagpokok' => null,
                 'tagbunga' => null,
                 'tagdenda' => null,
@@ -828,6 +832,7 @@ SQL;
             a.noakad,
             a.bakidebet,
             a.plafon,
+            a.jangkawaktu,
 
             a.tglefektif,
             a.tgljthtempo,
@@ -925,6 +930,7 @@ SQL;
                 'noakad' => $row->noakad ?? null,
                 'bakidebet' => $row->bakidebet ?? null,
                 'plafon' => $row->plafon,
+                'jangkawaktu' => $row->jangkawaktu,
 
                 'tgltempo' => null,
                 'tglefektif' => $row->tglefektif ?? null,
