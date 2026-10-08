@@ -150,10 +150,10 @@ Artisan::command(
              * 6. Jika berhasil, update snapshot
              */
             $result = $tagihanService->syncWithSnapshot(
-                $tgl1,
-                $tgl2,
                 $kodeljk,
-                $sandicabang
+                $sandicabang,
+                $tgl1,
+                $tgl2
             );
             $tagihanSyncSucceeded = true;
 

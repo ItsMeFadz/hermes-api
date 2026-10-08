@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Http;
 class TagihanKreditSyncService
 {
     /**
-     * Ambil data tagihan kredit langsung dari SQL Server.
-     *
-     * Tidak menggunakan report_tagihankredit.
+     * Ambil data tagihan kredit aktif yang memiliki angsuran pada rentang tanggal.
      */
     public function getTagihanKreditFromSqlServer(
         string $tgl1,
@@ -144,7 +142,7 @@ SQL;
             $params
         );
 
-        return array_map(function ($row)
+        $items = array_map(function ($row)
         {
             return [
                 'norekcrd' => $row->norekcrd ?? null,
@@ -187,6 +185,155 @@ SQL;
                 'ketinstansi' => $row->ketinstansi ?? null,
             ];
         }, $rows);
+
+        return $items;
+    }
+
+    /**
+     * Ambil semua data rekening kredit aktif tanpa bergantung pada jadwal RPS.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllActiveCreditItems(
+        string $kodeljk,
+        string $sandicabang = '000'
+    ): array {
+        $kodeljk = trim($kodeljk);
+        $sandicabang = trim($sandicabang);
+
+        $sql = <<<SQL
+SELECT
+    a.norekcrd,
+    RTRIM(d.namalengkap) AS namalengkap,
+    d.alamat AS alamatktp,
+    d.alamatdomisili,
+    d.notelp,
+    d.nohp,
+    a.noakad,
+    a.bakidebet,
+    NULL AS tgltempo,
+    a.tglefektif AS tglefektif,
+    a.tgljthtempo AS tgljthtempo,
+    a.graceperiod,
+    h.datatext1 AS statusrek,
+    a.plafon,
+    a.jangkawaktu,
+    NULL AS tagpokok,
+    NULL AS tagbunga,
+    NULL AS tagdenda,
+    NULL AS totalangsuran,
+    a.haritunggakkan,
+    a.norekpembayaran,
+    a.tungpokok,
+    a.tungbunga,
+    a.kolektibilitas,
+    a.kodekondisi,
+    ISNULL(
+        CASE
+            WHEN c.saldoakhir - c.saldoblokir - e.minsaldo < 0 THEN 0
+            ELSE c.saldoakhir - c.saldoblokir - e.minsaldo
+        END,
+        0
+    ) AS saldotab,
+    ISNULL(c.saldoakhir, 0) AS saldotabactual,
+    a.kodeao AS kodeao,
+    f.ket AS ao,
+    g.ket AS ketinstansi
+FROM crdmaster a
+LEFT JOIN tabmaster c
+    ON a.kodeljk = c.kodeljk
+    AND a.sandicabang = c.sandicabang
+    AND a.norekpembayaran = c.norekening
+LEFT JOIN tabungan_setup e
+    ON c.kodeproduktab = e.kodeproduk
+JOIN cif d
+    ON a.cif = d.cif
+LEFT JOIN refintern_ao f
+    ON a.kodeljk = f.kodeljk
+    AND a.sandicabang = f.sandicabang
+    AND a.kodeao = f.kode
+LEFT JOIN refintern_instansi g
+    ON a.kodeljk = g.kodeljk
+    AND a.sandicabang = g.sandicabang
+    AND a.kodeinstansi = g.kode
+LEFT JOIN reff_umum h
+    ON a.kodeljk = h.kodeljk
+    AND a.stsrekcrd = h.datavalue1
+    AND h.kode1 = 'stsrekcrd'
+WHERE
+    a.kodeljk = ?
+    AND a.stsrekcrd = '1'
+SQL;
+
+        $params = [$kodeljk];
+
+        if ($sandicabang !== '000')
+        {
+            $sql = str_replace(
+                'WHERE
+    a.kodeljk = ?',
+                'WHERE
+    a.kodeljk = ?
+    AND a.sandicabang = ?',
+                $sql
+            );
+            $params[] = $sandicabang;
+        }
+
+        $rows = DB::connection('sqlsrv')->select($sql, $params);
+        $items = array_map(function ($row)
+        {
+            return [
+                'norekcrd' => $row->norekcrd ?? null,
+                'namalengkap' => $row->namalengkap ?? null,
+                'alamatktp' => $row->alamatktp ?? null,
+                'alamatdomisili' => $row->alamatdomisili ?? null,
+                'notelp' => $row->notelp ?? null,
+                'nohp' => $row->nohp ?? null,
+                'noakad' => $row->noakad ?? null,
+                'bakidebet' => $row->bakidebet ?? null,
+                'tgltempo' => $row->tgltempo ?? null,
+                'tglefektif' => $row->tglefektif ?? null,
+                'tgljthtempo' => $row->tgljthtempo ?? null,
+                'graceperiod' => $row->graceperiod ?? null,
+                'statusrek' => $row->statusrek ?? null,
+                'plafon' => $row->plafon ?? null,
+                'jangkawaktu' => $row->jangkawaktu ?? null,
+                'tagpokok' => $row->tagpokok ?? null,
+                'tagbunga' => $row->tagbunga ?? null,
+                'tagdenda' => $row->tagdenda ?? null,
+                'totalangsuran' => $row->totalangsuran ?? null,
+                'haritunggakkan' => $row->haritunggakkan ?? null,
+                'tungpokok' => $row->tungpokok ?? null,
+                'tungbunga' => $row->tungbunga ?? null,
+                'kodekondisi' => $row->kodekondisi ?? null,
+                'kolektibilitas' => $row->kolektibilitas ?? null,
+                'norekpembayaran' => $row->norekpembayaran ?? null,
+                'saldotab' => $row->saldotab ?? null,
+                'saldotabactual' => $row->saldotabactual ?? null,
+                'kodeao' => $row->kodeao ?? null,
+                'ao' => $row->ao ?? null,
+                'ketinstansi' => $row->ketinstansi ?? null,
+            ];
+        }, $rows);
+
+        $uniqueItems = [];
+        $seenAccounts = [];
+
+        foreach ($items as $item)
+        {
+            $account = (string) ($item['norekcrd'] ?? '');
+
+            if (isset($seenAccounts[$account]))
+            {
+                continue;
+            }
+
+            $seenAccounts[$account] = true;
+            $uniqueItems[] = $item;
+        }
+
+        return $uniqueItems;
     }
 
     /**
@@ -655,10 +802,10 @@ SQL;
     }
 
     public function syncWithSnapshot(
-        string $tgl1,
-        string $tgl2,
         string $kodeljk,
-        string $sandicabang = '000'
+        string $sandicabang = '000',
+        ?string $tgl1 = null,
+        ?string $tgl2 = null
     ): array {
         /*
          * =====================================================
@@ -714,14 +861,18 @@ SQL;
          *
          * Kalau snapshot sudah ada:
          *     NORMAL SYNC
-         *     -> hanya tagihan berdasarkan tglangsuran
+         *     -> tagihan sesuai rentang tgl1/tgl2
+         *
+         * Data full aktif dikirim saat snapshot belum ada.
          */
-        if (!$this->snapshotExists())
+        $isInitialSync = !$this->snapshotExists();
+
+        if ($isInitialSync)
         {
             echo 'Snapshot belum ada. Menjalankan initial sync...'
                 . PHP_EOL;
 
-            $activeItems = $this->getInitialActiveCreditAccounts(
+            $activeItems = $this->getAllActiveCreditItems(
                 $kodeljk,
                 $sandicabang
             );
@@ -732,11 +883,31 @@ SQL;
                 . PHP_EOL;
 
             $activeItems = $this->getTagihanKreditFromSqlServer(
-                $tgl1,
-                $tgl2,
+                $tgl1 ?? now()->startOfMonth()->toDateString(),
+                $tgl2 ?? now()->endOfMonth()->toDateString(),
                 $kodeljk,
                 $sandicabang
             );
+        }
+
+        if ($isInitialSync)
+        {
+            echo "Total active credit accounts (stsrekcrd='1'): "
+                . count($activeItems)
+                . PHP_EOL;
+        }
+        else
+        {
+            echo 'Total active credit installments in date range: '
+                . count($activeItems)
+                . PHP_EOL;
+        }
+
+        if (!empty($activeItems))
+        {
+            echo 'First active credit account: '
+                . ($activeItems[0]['norekcrd'] ?? '')
+                . PHP_EOL;
         }
 
         /*
@@ -790,24 +961,11 @@ SQL;
             . PHP_EOL;
 
         return [
-            'active_accounts' => count(
-                $currentAccounts
-            ),
-
-            'disappeared_accounts' => count(
-                $disappearedAccounts
-            ),
-
-            'inactive_items_sent' => count(
-                $inactiveItems
-            ),
-
-            'active_items_sent' => count(
-                $activeItems
-            ),
-
+            'active_accounts' => count($currentAccounts),
+            'disappeared_accounts' => count($disappearedAccounts),
+            'active_items_sent' => count($activeItems),
+            'inactive_items_sent' => count($inactiveItems),
             'total_sent' => $sendResult['sent'] ?? 0,
-
             'snapshot_updated' => true,
         ];
     }
