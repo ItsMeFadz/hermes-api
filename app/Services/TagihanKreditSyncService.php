@@ -698,17 +698,6 @@ SQL;
             $sandicabang
         );
 
-        echo "Total active credit accounts (stsrekcrd='1'): "
-            . count($activeItems)
-            . PHP_EOL;
-
-        if (!empty($activeItems))
-        {
-            echo 'First active credit account: '
-                . ($activeItems[0]['norekcrd'] ?? '')
-                . PHP_EOL;
-        }
-
         /*
          * =====================================================
          * 5. Ambil data rekening yang sudah tidak aktif
