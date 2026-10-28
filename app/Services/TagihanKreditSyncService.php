@@ -201,7 +201,8 @@ SQL;
 
             $batchNumber = $index + 1;
 
-            $response = Http::timeout(60)
+            $response = Http::timeout(30)
+                ->timeout(120)
                 ->retry(2, 1000)
                 ->withHeaders([
                     'X-Sync-Key' => $apiKey,
