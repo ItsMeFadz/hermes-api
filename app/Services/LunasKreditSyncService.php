@@ -32,7 +32,8 @@ class LunasKreditSyncService
             abort(422, 'Target URL belum diset. Isi SYNC_API_URL di .env.');
         }
 
-        $http = Http::timeout(60)
+        $http = Http::connectTimeout(30)
+            ->timeout(120)
             ->retry(2, 1000)
             ->withHeaders(['X-Sync-Key' => $this->syncKey()])
             ->withOptions(['verify' => $this->sslVerifyOption()]);
